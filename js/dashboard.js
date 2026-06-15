@@ -7,15 +7,9 @@ async function iniciarDashboard() {
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const dia = String(hoje.getDate()).padStart(2, '0');
     
-    if (document.getElementById("filtroData")) {
-        document.getElementById("filtroData").value = `${ano}-${mes}-${dia}`;
-    }
-    if (document.getElementById("filtroMes")) {
-        document.getElementById("filtroMes").value = mes;
-    }
-    if (document.getElementById("filtroAno")) {
-        document.getElementById("filtroAno").value = ano;
-    }
+    if (document.getElementById("filtroData")) document.getElementById("filtroData").value = `${ano}-${mes}-${dia}`;
+    if (document.getElementById("filtroMes")) document.getElementById("filtroMes").value = mes;
+    if (document.getElementById("filtroAno")) document.getElementById("filtroAno").value = ano;
 
     await buscarDadosDoServidor();
     calcularEExibirDados();
@@ -23,31 +17,20 @@ async function iniciarDashboard() {
 
 async function buscarDadosDoServidor() {
     try {
-        // Monta a URL garantindo que não haja barras duplicadas na rota da API
         const urlVendas = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.vendas}/?user_field_names=true&size=1000`;
         const urlDespesas = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.despesas}/?user_field_names=true&size=1000`;
 
-        const vendasResponse = await fetch(urlVendas, {
-            headers: { "Authorization": `Token ${BASEROW_TOKEN}` }
-        });
-        
-        const despesasResponse = await fetch(urlDespesas, {
-            headers: { "Authorization": `Token ${BASEROW_TOKEN}` }
-        });
+        const vendasResponse = await fetch(urlVendas, { headers: { "Authorization": `Token ${BASEROW_TOKEN}` } });
+        const despesasResponse = await fetch(urlDespesas, { headers: { "Authorization": `Token ${BASEROW_TOKEN}` } });
 
-        if (!vendasResponse.ok || !despesasResponse.ok) {
-            console.error("Erro na resposta do Baserow. Verifique os IDs das tabelas no config.js");
-            return;
+        if (vendasResponse.ok && despesasResponse.ok) {
+            const vendasDados = await vendasResponse.json();
+            const despesasDados = await despesasResponse.json();
+            dadosGlobais.vendas = vendasDados.results || [];
+            dadosGlobais.despesas = despesasDados.results || [];
         }
-
-        const vendasDados = await vendasResponse.json();
-        const despesasDados = await despesasResponse.json();
-
-        dadosGlobais.vendas = vendasDados.results || [];
-        dadosGlobais.despesas = despesasDados.results || [];
-
     } catch (error) {
-        console.error("Erro crítico ao conectar com o Baserow:", error);
+        console.error("Erro ao buscar dados:", error);
     }
 }
 
@@ -56,16 +39,18 @@ function alternarFiltro(tipo) {
     calcularEExibirDados();
 }
 
+// Trata formatos: "2026-06-14T22:00:00Z", "2026-06-14", ou "14/06/2026 22:00"
 function normalizarData(dataString) {
     if (!dataString) return "";
-    let stringLimpa = dataString.split("T")[0].trim();
     
-    if (stringLimpa.includes("/")) {
-        const partes = stringLimpa.split("/");
-        if (partes[0].length === 4) return stringLimpa.replace(/\//g, "-");
-        return `${partes[2]}-${partes[1]}-${partes[0]}`;
+    // Remove qualquer informação de hora pegando apenas a primeira parte
+    let apenasData = dataString.trim().split(" ")[0].split("T")[0];
+    
+    if (apenasData.includes("/")) {
+        const partes = apenasData.split("/");
+        return `${partes[2]}-${partes[1]}-${partes[0]}`; // Converte DD/MM/AAAA para AAAA-MM-DD
     }
-    return stringLimpa;
+    return apenasData;
 }
 
 function calcularEExibirDados() {
@@ -78,59 +63,49 @@ function calcularEExibirDados() {
 
     if (tipoFiltroAtual === 'dia') {
         const dataFormatada = dataSelecionada.split('-').reverse().join('/');
-        if (document.getElementById("tituloPeriodo")) {
-            document.getElementById("tituloPeriodo").innerText = `Resumo do Dia`;
-        }
-        if (document.getElementById("subtituloPeriodo")) {
-            document.getElementById("subtituloPeriodo").innerText = `Analisando a data: ${dataFormatada}`;
-        }
+        if (document.getElementById("tituloPeriodo")) document.getElementById("tituloPeriodo").innerText = `Resumo do Dia`;
+        if (document.getElementById("subtituloPeriodo")) document.getElementById("subtituloPeriodo").innerText = `Analisando a data: ${dataFormatada}`;
 
+        // Calcula Vendas Validadas
         dadosGlobais.vendas.forEach(v => {
-            const dataRegistro = normalizarData(v.data || v.Data || v.DATA || v.Data_da_Venda);
+            if (!v.produto) return; // Ignora linhas totalmente vazias no banco
+            
+            const dataRegistro = normalizarData(v.data || v.Data || v.DATA);
             if (dataRegistro === dataSelecionada) {
                 const total = Number(v.valor_total || v.Valor_Total || 0);
-                const unitario = Number(v.valor_unitario || v.Valor_Unitario || v.valor || v.Valor || 0);
+                const unitario = Number(v.valor_unitario || v.Valor_Unitario || 0);
                 const qtd = Number(v.quantidade || v.Quantidade || 1);
                 
-                if (total > 0) {
-                    totalVendas += total;
-                } else {
-                    totalVendas += (unitario * qtd);
-                }
+                totalVendas += (total > 0) ? total : (unitario * qtd);
             }
         });
 
+        // Calcula Despesas Validadas
         dadosGlobais.despesas.forEach(d => {
             const dataRegistro = normalizarData(d.data || d.Data || d.DATA);
             if (dataRegistro === dataSelecionada) {
-                totalDespesas += Number(d.valor || d.Valor || d.valor_total || 0);
+                totalDespesas += Number(d.valor || d.Valor || 0);
             }
         });
 
     } else if (tipoFiltroAtual === 'mes') {
         const comboMes = document.getElementById("filtroMes");
         const nomeMes = comboMes ? comboMes.options[comboMes.selectedIndex].text : "";
-        if (document.getElementById("tituloPeriodo")) {
-            document.getElementById("tituloPeriodo").innerText = `Fechamento Mensal`;
-        }
-        if (document.getElementById("subtituloPeriodo")) {
-            document.getElementById("subtituloPeriodo").innerText = `Analisando o mês de ${nomeMes} de ${anoSelecionado}`;
-        }
+        if (document.getElementById("tituloPeriodo")) document.getElementById("tituloPeriodo").innerText = `Fechamento Mensal`;
+        if (document.getElementById("subtituloPeriodo")) document.getElementById("subtituloPeriodo").innerText = `Analisando o mês de ${nomeMes} de ${anoSelecionado}`;
 
         dadosGlobais.vendas.forEach(v => {
-            const dataRegistro = normalizarData(v.data || v.Data || v.DATA || v.Data_da_Venda);
+            if (!v.produto) return; 
+            
+            const dataRegistro = normalizarData(v.data || v.Data || v.DATA);
             if (dataRegistro) {
                 const [ano, mes, dia] = dataRegistro.split('-');
                 if (ano === anoSelecionado && mes === mesSelecionado) {
                     const total = Number(v.valor_total || v.Valor_Total || 0);
-                    const unitario = Number(v.valor_unitario || v.Valor_Unitario || v.valor || v.Valor || 0);
+                    const unitario = Number(v.valor_unitario || v.Valor_Unitario || 0);
                     const qtd = Number(v.quantidade || v.Quantidade || 1);
                     
-                    if (total > 0) {
-                        totalVendas += total;
-                    } else {
-                        totalVendas += (unitario * qtd);
-                    }
+                    totalVendas += (total > 0) ? total : (unitario * qtd);
                 }
             }
         });
@@ -140,7 +115,7 @@ function calcularEExibirDados() {
             if (dataRegistro) {
                 const [ano, mes, dia] = dataRegistro.split('-');
                 if (ano === anoSelecionado && mes === mesSelecionado) {
-                    totalDespesas += Number(d.valor || d.Valor || d.valor_total || 0);
+                    totalDespesas += Number(d.valor || d.Valor || 0);
                 }
             }
         });
@@ -158,11 +133,7 @@ function calcularEExibirDados() {
     const lucroElement = document.getElementById("lucroTotal");
     if (lucroElement) {
         lucroElement.innerHTML = `R$ ${lucro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        if (lucro >= 0) {
-            lucroElement.className = "text-lucro";
-        } else {
-            lucroElement.className = "text-despesas";
-        }
+        lucroElement.className = (lucro >= 0) ? "text-lucro" : "text-despesas";
     }
 }
 
