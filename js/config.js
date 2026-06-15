@@ -1,4 +1,4 @@
-﻿const BASEROW_TOKEN = "COLE_SEU_NOVO_TOKEN_AQUI";
+﻿const BASEROW_TOKEN = "21WDS4cSz6izrJsEfUzRblsIdtj9DCF5";
 
 const API_URL =
 "https://api.baserow.io/api/database/rows/table";
