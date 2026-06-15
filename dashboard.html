@@ -5,9 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - V.E Batatas</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .filter-container {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-group label {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+        .filter-group input, .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .section-title {
+            margin: 30px 0 15px 0;
+            color: #1a252f;
+            font-size: 18px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
 
+    <!-- Menu de Navegação Superior -->
     <nav class="navbar">
         <a href="dashboard.html" class="navbar-brand">
             <img src="imagem.jpg" alt="Logo" class="navbar-logo">
@@ -22,16 +58,48 @@
     </nav>
 
     <div class="container">
-        <h2>Painel Financeiro</h2>
+        
+        <!-- Seletores de Período para controle dinâmico -->
+        <div class="filter-container">
+            <div class="filter-group">
+                <label for="filtroData">Consultar Dia:</label>
+                <input type="date" id="filtroData" onchange="alternarFiltro('dia')">
+            </div>
+            
+            <div class="filter-group">
+                <label for="filtroMes">Consultar Mês Completo:</label>
+                <select id="filtroMes" onchange="alternarFiltro('mes')">
+                    <option value="01">Janeiro</option>
+                    <option value="02">Fevereiro</option>
+                    <option value="03">Março</option>
+                    <option value="04">Abril</option>
+                    <option value="05">Maio</option>
+                    <option value="06">Junho</option>
+                    <option value="07">Julho</option>
+                    <option value="08">Agosto</option>
+                    <option value="09">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                </select>
+                <select id="filtroAno" onchange="alternarFiltro('mes')">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
+
+        <h2 id="tituloPeriodo" style="color: #1a252f; font-size: 22px; margin-bottom: 5px;">Resumo de Hoje</h2>
+        <p id="subtituloPeriodo" style="color: var(--text-light); margin: 0 0 20px 0; font-size: 14px;"></p>
         
         <div class="grid">
             <div class="box box-vendas">
-                <h3>Total Vendas</h3>
+                <h3>Total Apurado</h3>
                 <p id="vendasTotal" class="text-vendas">R$ 0,00</p>
             </div>
             
             <div class="box box-despesas">
-                <h3>Total Despesas</h3>
+                <h3>Total Gasto</h3>
                 <p id="despesasTotal" class="text-despesas">R$ 0,00</p>
             </div>
             
