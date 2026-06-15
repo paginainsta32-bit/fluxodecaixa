@@ -1,35 +1,35 @@
-﻿async function salvarDespesa(){
+async function salvarDespesa() {
+    const descricao = document.getElementById("descricao").value.trim();
+    const valor = Number(document.getElementById("valor").value);
 
-const descricao =
-document.getElementById("descricao").value;
+    if (!descricao || !valor) {
+        alert("Por favor, preencha todos os campos!");
+        return;
+    }
 
-const valor =
-Number(
-document.getElementById("valor").value
-);
+    try {
+        const response = await fetch(`${API_URL}/${TABLES.despesas}/?user_field_names=true`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Token ${BASEROW_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                data: new Date().toISOString().split("T")[0],
+                descricao: descricao,
+                valor: valor
+            })
+        });
 
-await fetch(
-`${API_URL}/${TABLES.despesas}/?user_field_names=true`,
-{
-method:"POST",
-
-headers:{
-Authorization:`Token ${BASEROW_21WDS4cSz6izrJsEfUzRblsIdtj9DCF5}`,
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-data:new Date()
-.toISOString()
-.split("T")[0],
-
-descricao:descricao,
-
-valor:valor
-
-})
-});
-
-alert("Despesa cadastrada");
+        if (response.ok) {
+            alert("Despesa cadastrada com sucesso!");
+            document.getElementById("descricao").value = "";
+            document.getElementById("valor").value = "";
+        } else {
+            alert("Erro ao salvar no servidor. Verifique as configurações do Baserow.");
+        }
+    } catch (error) {
+        console.error("Erro ao salvar despesa:", error);
+        alert("Erro de conexão com o servidor.");
+    }
 }
