@@ -1,10 +1,7 @@
-// Variável global para armazenar todos os dados brutos vindos do Baserow
 let dadosGlobais = { vendas: [], despesas: [] };
-let tipoFiltroAtual = 'dia'; // pode ser 'dia' ou 'mes'
+let tipoFiltroAtual = 'dia'; 
 
-// Função executada assim que a página abre
 async function iniciarDashboard() {
-    // Define a data de hoje nos campos da tela para começar atualizado
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
@@ -14,21 +11,16 @@ async function iniciarDashboard() {
     document.getElementById("filtroMes").value = mes;
     document.getElementById("filtroAno").value = ano;
 
-    // Busca todos os dados do Baserow
     await buscarDadosDoServidor();
-    
-    // Processa o filtro inicial (que é o dia de hoje)
     calcularEExibirDados();
 }
 
 async function buscarDadosDoServidor() {
     try {
-        // Puxa as vendas
         const vendasResponse = await fetch(`${API_URL}/${TABLES.vendas}/?user_field_names=true&size=1000`, {
             headers: { "Authorization": `Token ${BASEROW_TOKEN}` }
         });
         
-        // Puxa as despesas
         const despesasResponse = await fetch(`${API_URL}/${TABLES.despesas}/?user_field_names=true&size=1000`, {
             headers: { "Authorization": `Token ${BASEROW_TOKEN}` }
         });
@@ -49,22 +41,36 @@ function alternarFiltro(tipo) {
     calcularEExibirDados();
 }
 
+// Função auxiliar para padronizar qualquer tipo de data para YYYY-MM-DD
+function normalizarData(dataString) {
+    if (!dataString) return "";
+    let stringLimpa = dataString.split("T")[0].trim(); // Remove horas se houver
+    
+    // Se a data vier no formato DD/MM/AAAA converte para AAAA-MM-DD
+    if (stringLimpa.includes("/")) {
+        const partes = stringLimpa.split("/");
+        if (partes[0].length === 4) return stringLimpa.replace(/\//g, "-"); // Caso venha YYYY/MM/DD
+        return `${partes[2]}-${partes[1]}-${partes[0]}`;
+    }
+    return stringLimpa;
+}
+
 function calcularEExibirDados() {
     let totalVendas = 0;
     let totalDespesas = 0;
 
-    const dataSelecionada = document.getElementById("filtroData").value; // Formato: YYYY-MM-DD
-    const mesSelecionado = document.getElementById("filtroMes").value; // Formato: MM
-    const anoSelecionado = document.getElementById("filtroAno").value; // Formato: YYYY
+    const dataSelecionada = document.getElementById("filtroData").value; 
+    const mesSelecionado = document.getElementById("filtroMes").value; 
+    const anoSelecionado = document.getElementById("filtroAno").value; 
 
     if (tipoFiltroAtual === 'dia') {
         const dataFormatada = dataSelecionada.split('-').reverse().join('/');
         document.getElementById("tituloPeriodo").innerText = `Resumo do Dia`;
         document.getElementById("subtituloPeriodo").innerText = `Analisando a data: ${dataFormatada}`;
 
-        // Filtra Vendas do dia específico (tolerante a maiúsculas/minúsculas no nome da coluna)
+        // Soma Vendas do Dia
         dadosGlobais.vendas.forEach(v => {
-            const dataRegistro = v.data || v.Data || v.DATA || "";
+            const dataRegistro = normalizarData(v.data || v.Data || v.DATA);
             if (dataRegistro === dataSelecionada) {
                 const total = Number(v.valor_total || v.Valor_Total || 0);
                 const unitario = Number(v.valor_unitario || v.Valor_Unitario || v.valor || v.Valor || 0);
@@ -78,9 +84,9 @@ function calcularEExibirDados() {
             }
         });
 
-        // Filtra Despesas do dia específico
+        // Soma Despesas do Dia
         dadosGlobais.despesas.forEach(d => {
-            const dataRegistro = d.data || d.Data || d.DATA || "";
+            const dataRegistro = normalizarData(d.data || d.Data || d.DATA);
             if (dataRegistro === dataSelecionada) {
                 totalDespesas += Number(d.valor || d.Valor || d.valor_total || 0);
             }
@@ -91,9 +97,9 @@ function calcularEExibirDados() {
         document.getElementById("tituloPeriodo").innerText = `Fechamento Mensal`;
         document.getElementById("subtituloPeriodo").innerText = `Analisando o mês de ${nomeMes} de ${anoSelecionado}`;
 
-        // Filtra Vendas do mês e ano selecionados
+        // Soma Vendas do Mês
         dadosGlobais.vendas.forEach(v => {
-            const dataRegistro = v.data || v.Data || v.DATA || "";
+            const dataRegistro = normalizarData(v.data || v.Data || v.DATA);
             if (dataRegistro) {
                 const [ano, mes, dia] = dataRegistro.split('-');
                 if (ano === anoSelecionado && mes === mesSelecionado) {
@@ -110,9 +116,9 @@ function calcularEExibirDados() {
             }
         });
 
-        // Filtra Despesas do mês e ano selecionados
+        // Soma Despesas do Mês
         dadosGlobais.despesas.forEach(d => {
-            const dataRegistro = d.data || d.Data || d.DATA || "";
+            const dataRegistro = normalizarData(d.data || d.Data || d.DATA);
             if (dataRegistro) {
                 const [ano, mes, dia] = dataRegistro.split('-');
                 if (ano === anoSelecionado && mes === mesSelecionado) {
@@ -122,10 +128,9 @@ function calcularEExibirDados() {
         });
     }
 
-    // Calcula o balanço final
     const lucro = totalVendas - totalDespesas;
 
-    // Atualiza o painel com formatação em Real (R$)
+    // Renderiza na tela
     document.getElementById("vendasTotal").innerHTML = `R$ ${totalVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById("despesasTotal").innerHTML = `R$ ${totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     
@@ -139,5 +144,4 @@ function calcularEExibirDados() {
     }
 }
 
-// Inicialização automática do sistema ao abrir a página
 window.onload = iniciarDashboard;
