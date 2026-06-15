@@ -8,16 +8,9 @@ async function salvarVenda() {
         return;
     }
 
-    // Pega a data e hora local da máquina atual (evita problemas de fuso horário UTC do ISO)
-    const agora = new Date();
-    const ano = agora.getFullYear();
-    const mes = String(agora.getMonth() + 1).padStart(2, '0');
-    const dia = String(agora.getDate()).padStart(2, '0');
-    const hora = String(agora.getHours()).padStart(2, '0');
-    const minuto = String(agora.getMinutes()).padStart(2, '0');
-    
-    // Formato exato esperado pelo Baserow para campos Date com hora inclusa: "YYYY-MM-DD HH:MM"
-    const dataFormatadaBaserow = `${ano}-${mes}-${dia} ${hora}:${minuto}`;
+    // Solução da Data: Cria o formato ISO corrigindo o fuso horário local para o Baserow aceitar o campo Date + Time
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000; 
+    const dataLocalISO = (new Date(Date.now() - tzoffset)).toISOString().slice(0, 19).replace('T', ' ');
 
     try {
         const urlLimpa = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.vendas}/?user_field_names=true`;
@@ -29,7 +22,7 @@ async function salvarVenda() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "data": dataFormatadaBaserow,
+                "data": dataLocalISO,
                 "produto": produto,
                 "quantidade": quantidade,
                 "valor_unitario": valor
@@ -42,38 +35,12 @@ async function salvarVenda() {
             document.getElementById("quantidade").value = "";
             document.getElementById("valor").value = "";
         } else {
-            const erroDetalhado = await response.json();
-            console.error("Erro retornado pelo Baserow:", erroDetalhado);
-            
-            // Se falhar, tentamos um plano B enviando apenas a data sem a hora
-            console.log("Tentando salvamento com formato alternativo...");
-            const dataApenas = `${ano}-${mes}-${dia}`;
-            
-            const responsePlanoB = await fetch(urlLimpa, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Token ${BASEROW_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    "data": dataApenas,
-                    "produto": produto,
-                    "quantidade": quantidade,
-                    "valor_unitario": valor
-                })
-            });
-
-            if (responsePlanoB.ok) {
-                alert("Venda cadastrada com sucesso (Formato Alternativo)!");
-                document.getElementById("produto").value = "";
-                document.getElementById("quantidade").value = "";
-                document.getElementById("valor").value = "";
-            } else {
-                alert("Erro persistente no Baserow. Certifique-se de que a coluna de data permite inserção de texto ou limpe as linhas vazias do seu banco.");
-            }
+            const erroCorpo = await response.json();
+            console.error("Erro Baserow:", erroCorpo);
+            alert("Erro ao salvar. Certifique-se de que os nomes das colunas são data, produto, quantidade e valor_unitario.");
         }
     } catch (error) {
-        console.error("Erro na requisição de rede:", error);
-        alert("Não foi possível conectar ao servidor do Baserow.");
+        console.error("Erro na conexão:", error);
+        alert("Não foi possível conectar ao servidor.");
     }
 }
