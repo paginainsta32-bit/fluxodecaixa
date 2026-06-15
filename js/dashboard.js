@@ -14,7 +14,7 @@ async function iniciarDashboard() {
     document.getElementById("filtroMes").value = mes;
     document.getElementById("filtroAno").value = ano;
 
-    // Busca todos os dados do Baserow uma única vez para processar rápido
+    // Busca todos os dados do Baserow
     await buscarDadosDoServidor();
     
     // Processa o filtro inicial (que é o dia de hoje)
@@ -23,7 +23,7 @@ async function iniciarDashboard() {
 
 async function buscarDadosDoServidor() {
     try {
-        // Puxa as vendas (aumentando o limite para garantir que pegue o mês/dia completo)
+        // Puxa as vendas
         const vendasResponse = await fetch(`${API_URL}/${TABLES.vendas}/?user_field_names=true&size=1000`, {
             headers: { "Authorization": `Token ${BASEROW_TOKEN}` }
         });
@@ -58,24 +58,31 @@ function calcularEExibirDados() {
     const anoSelecionado = document.getElementById("filtroAno").value; // Formato: YYYY
 
     if (tipoFiltroAtual === 'dia') {
-        // Muda os títulos textuais da tela
         const dataFormatada = dataSelecionada.split('-').reverse().join('/');
         document.getElementById("tituloPeriodo").innerText = `Resumo do Dia`;
         document.getElementById("subtituloPeriodo").innerText = `Analisando a data: ${dataFormatada}`;
 
-        // Filtra Vendas do dia específico
+        // Filtra Vendas do dia específico (tolerante a maiúsculas/minúsculas no nome da coluna)
         dadosGlobais.vendas.forEach(v => {
-            if (v.data === dataSelecionada) {
-                const unitario = Number(v.valor_total || v.valor_unitario || 0);
-                const qtd = Number(v.quantidade || 1);
-                totalVendas += (unitario * qtd);
+            const dataRegistro = v.data || v.Data || v.DATA || "";
+            if (dataRegistro === dataSelecionada) {
+                const total = Number(v.valor_total || v.Valor_Total || 0);
+                const unitario = Number(v.valor_unitario || v.Valor_Unitario || v.valor || v.Valor || 0);
+                const qtd = Number(v.quantidade || v.Quantidade || v.qtd || v.Qtd || 1);
+                
+                if (total > 0) {
+                    totalVendas += total;
+                } else {
+                    totalVendas += (unitario * qtd);
+                }
             }
         });
 
         // Filtra Despesas do dia específico
         dadosGlobais.despesas.forEach(d => {
-            if (d.data === dataSelecionada) {
-                totalDespesas += Number(d.valor || 0);
+            const dataRegistro = d.data || d.Data || d.DATA || "";
+            if (dataRegistro === dataSelecionada) {
+                totalDespesas += Number(d.valor || d.Valor || d.valor_total || 0);
             }
         });
 
@@ -86,38 +93,45 @@ function calcularEExibirDados() {
 
         // Filtra Vendas do mês e ano selecionados
         dadosGlobais.vendas.forEach(v => {
-            if (v.data) {
-                const [ano, mes, dia] = v.data.split('-');
+            const dataRegistro = v.data || v.Data || v.DATA || "";
+            if (dataRegistro) {
+                const [ano, mes, dia] = dataRegistro.split('-');
                 if (ano === anoSelecionado && mes === mesSelecionado) {
-                    const unitario = Number(v.valor_total || v.valor_unitario || 0);
-                    const qtd = Number(v.quantidade || 1);
-                    totalVendas += (unitario * qtd);
+                    const total = Number(v.valor_total || v.Valor_Total || 0);
+                    const unitario = Number(v.valor_unitario || v.Valor_Unitario || v.valor || v.Valor || 0);
+                    const qtd = Number(v.quantidade || v.Quantidade || v.qtd || v.Qtd || 1);
+                    
+                    if (total > 0) {
+                        totalVendas += total;
+                    } else {
+                        totalVendas += (unitario * qtd);
+                    }
                 }
             }
         });
 
         // Filtra Despesas do mês e ano selecionados
         dadosGlobais.despesas.forEach(d => {
-            if (d.data) {
-                const [ano, mes, dia] = d.data.split('-');
+            const dataRegistro = d.data || d.Data || d.DATA || "";
+            if (dataRegistro) {
+                const [ano, mes, dia] = dataRegistro.split('-');
                 if (ano === anoSelecionado && mes === mesSelecionado) {
-                    totalDespesas += Number(d.valor || 0);
+                    totalDespesas += Number(d.valor || d.Valor || d.valor_total || 0);
                 }
             }
         });
     }
 
-    // Calcula o balanço final (Apurado menos o Gasto)
+    // Calcula o balanço final
     const lucro = totalVendas - totalDespesas;
 
-    // Joga os valores formatados em moeda real R$ de volta pra tela
+    // Atualiza o painel com formatação em Real (R$)
     document.getElementById("vendasTotal").innerHTML = `R$ ${totalVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById("despesasTotal").innerHTML = `R$ ${totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     
     const lucroElement = document.getElementById("lucroTotal");
     lucroElement.innerHTML = `R$ ${lucro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     
-    // Altera a cor do texto do lucro de forma inteligente (Verde se deu lucro, vermelho se fechou negativo)
     if (lucro >= 0) {
         lucroElement.className = "text-lucro";
     } else {
