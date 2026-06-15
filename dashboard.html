@@ -1,43 +1,48 @@
-﻿<!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard</title>
-<link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - V.E Batatas</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<h1>Dashboard</h1>
+    <nav class="navbar">
+        <a href="dashboard.html" class="navbar-brand">
+            <img src="imagem.jpg" alt="Logo" class="navbar-logo">
+            <span>V.E Batatas</span>
+        </a>
+        <div class="navbar-menu">
+            <a href="dashboard.html" style="font-weight: bold; color: var(--primary);">Dashboard</a>
+            <a href="vendas.html">Nova Venda</a>
+            <a href="despesas.html">Nova Despesa</a>
+            <a href="index.html" style="color: var(--danger);">Sair</a>
+        </div>
+    </nav>
 
-<div class="grid">
+    <div class="container">
+        <h2>Painel Financeiro</h2>
+        
+        <div class="grid">
+            <div class="box box-vendas">
+                <h3>Total Vendas</h3>
+                <p id="vendasTotal" class="text-vendas">R$ 0,00</p>
+            </div>
+            
+            <div class="box box-despesas">
+                <h3>Total Despesas</h3>
+                <p id="despesasTotal" class="text-despesas">R$ 0,00</p>
+            </div>
+            
+            <div class="box box-lucro">
+                <h3>Lucro Líquido</h3>
+                <p id="lucroTotal" class="text-lucro">R$ 0,00</p>
+            </div>
+        </div>
+    </div>
 
-<div class="box">
-<h3>Vendas</h3>
-<p id="vendasTotal">R$ 0</p>
-</div>
-
-<div class="box">
-<h3>Despesas</h3>
-<p id="despesasTotal">R$ 0</p>
-</div>
-
-<div class="box">
-<h3>Lucro</h3>
-<p id="lucroTotal">R$ 0</p>
-</div>
-
-</div>
-
-<a href="vendas.html">
-Nova Venda
-</a>
-
-<a href="despesas.html">
-Nova Despesa
-</a>
-
-<script src="js/config.js"></script>
-<script src="js/dashboard.js"></script>
-
+    <script src="js/config.js"></script>
+    <script src="js/dashboard.js"></script>
 </body>
 </html>
