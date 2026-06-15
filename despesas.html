@@ -1,37 +1,48 @@
-async function salvarDespesa() {
-    const descricao = document.getElementById("descricao").value.trim();
-    const valor = Number(document.getElementById("valor").value);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Despesa - V.E Batatas</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
 
-    if (!descricao || !valor) {
-        alert("Por favor, preencha todos os campos!");
-        return;
-    }
+    <!-- Barra de Navegação Superior com a sua Logo -->
+    <nav class="navbar">
+        <a href="dashboard.html" class="navbar-brand">
+            <img src="imagem.jpg" alt="Logo V.E Batatas" class="navbar-logo">
+            <span>V.E Batatas</span>
+        </a>
+        <div class="navbar-menu">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="vendas.html">Nova Venda</a>
+            <a href="despesas.html" style="font-weight: bold; color: var(--primary);">Nova Despesa</a>
+            <a href="index.html" style="color: var(--danger);">Sair</a>
+        </div>
+    </nav>
 
-    try {
-        // Corrigido aqui: Agora utiliza a constante global BASEROW_TOKEN correta do config.js
-        const response = await fetch(`${API_URL}/${TABLES.despesas}/?user_field_names=true`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Token ${BASEROW_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                data: new Date().toISOString().split("T")[0],
-                descricao: descricao,
-                valor: valor
-            })
-        });
+    <!-- Formulário de Lançamento de Gastos -->
+    <div class="container" style="max-width: 500px;">
+        <div class="card" style="max-width: 100%; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <h2 style="margin-top: 0; color: #1a252f; text-align: center;">Lançar Nova Despesa</h2>
+            
+            <div class="form-group">
+                <label for="descricao">Descrição do Gasto</label>
+                <input id="descricao" type="text" placeholder="Ex: Óleo de fritura, sacos de batata...">
+            </div>
+            
+            <div class="form-group">
+                <label for="valor">Valor da Despesa (R$)</label>
+                <input id="valor" type="number" step="0.01" placeholder="Ex: 45.00">
+            </div>
+            
+            <button onclick="salvarDespesa()" style="background-color: var(--danger); color: white;">Salvar Despesa</button>
+        </div>
+    </div>
 
-        if (response.ok) {
-            alert("Despesa cadastrada com sucesso!");
-            // Limpa os campos após salvar
-            document.getElementById("descricao").value = "";
-            document.getElementById("valor").value = "";
-        } else {
-            alert("Erro ao salvar no servidor. Verifique os dados.");
-        }
-    } catch (error) {
-        console.error("Erro ao salvar despesa:", error);
-        alert("Erro de conexão.");
-    }
-}
+    <!-- Vinculação correta dos arquivos de configuração e lógica -->
+    <script src="js/config.js"></script>
+    <script src="js/despesas.js"></script>
+</body>
+</html>
