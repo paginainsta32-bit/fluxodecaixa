@@ -8,15 +8,16 @@ async function salvarVenda() {
         return;
     }
 
-    // Pega a data de hoje local do navegador (evita problemas de fuso horário)
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const dia = String(hoje.getDate()).padStart(2, '0');
-    const dataFormatada = `${ano}-${mes}-${dia}`; // Formato padrão YYYY-MM-DD
+    const dataFormatada = `${ano}-${mes}-${dia}`; 
 
     try {
-        const response = await fetch(`${API_URL}/${TABLES.vendas}/?user_field_names=true`, {
+        const urlDestino = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.vendas}/?user_field_names=true`;
+        
+        const response = await fetch(urlDestino, {
             method: "POST",
             headers: {
                 "Authorization": `Token ${BASEROW_TOKEN}`,
@@ -36,10 +37,10 @@ async function salvarVenda() {
             document.getElementById("quantidade").value = "";
             document.getElementById("valor").value = "";
         } else {
-            alert("Erro ao salvar a venda no Baserow.");
+            alert("Erro do Baserow ao registrar. Verifique o nome dos campos na sua tabela.");
         }
     } catch (error) {
-        console.error("Erro ao salvar venda:", error);
-        alert("Erro de conexão.");
+        console.error("Erro na conexão da venda:", error);
+        alert("Não foi possível conectar ao servidor.");
     }
 }
