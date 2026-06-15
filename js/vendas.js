@@ -8,6 +8,13 @@ async function salvarVenda() {
         return;
     }
 
+    // Pega a data de hoje local do navegador (evita problemas de fuso horário)
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const dataFormatada = `${ano}-${mes}-${dia}`; // Formato padrão YYYY-MM-DD
+
     try {
         const response = await fetch(`${API_URL}/${TABLES.vendas}/?user_field_names=true`, {
             method: "POST",
@@ -16,7 +23,7 @@ async function salvarVenda() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                data: new Date().toISOString().split("T")[0],
+                data: dataFormatada,
                 produto: produto,
                 quantidade: quantidade,
                 valor_unitario: valor
@@ -25,12 +32,11 @@ async function salvarVenda() {
 
         if (response.ok) {
             alert("Venda cadastrada com sucesso!");
-            // Limpa os campos
             document.getElementById("produto").value = "";
             document.getElementById("quantidade").value = "";
             document.getElementById("valor").value = "";
         } else {
-            alert("Erro ao salvar a venda.");
+            alert("Erro ao salvar a venda no Baserow.");
         }
     } catch (error) {
         console.error("Erro ao salvar venda:", error);
