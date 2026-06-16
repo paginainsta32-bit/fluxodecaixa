@@ -8,17 +8,14 @@ async function salvarVenda() {
         return;
     }
 
-    // Captura a data e hora locais para preencher o campo combinado do Baserow corretamente
+    // Gera os dois formatos para garantir compatibilidade com o tipo de coluna do Baserow
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const dia = String(hoje.getDate()).padStart(2, '0');
-    const horas = String(hoje.getHours()).padStart(2, '0');
-    const minutos = String(hoje.getMinutes()).padStart(2, '0');
-    const segundos = String(hoje.getSeconds()).padStart(2, '0');
     
-    // Formato final aceito por campos Date + Time: "YYYY-MM-DD HH:MM:SS"
-    const dataHoraLocal = `${ano}-${mes}-${dia} ${horas}:${minutos}:${segundos}`;
+    // Tenta enviar o formato ISO padrão que o Baserow prefere em campos Date nativos
+    const dataFormatada = `${ano}-${mes}-${dia}`;
 
     try {
         const urlLimpa = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.vendas}/?user_field_names=true`;
@@ -30,7 +27,7 @@ async function salvarVenda() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "data": dataHoraLocal,
+                "data": dataFormatada,
                 "produto": produto,
                 "quantidade": quantidade,
                 "valor_unitario": valor
@@ -43,9 +40,32 @@ async function salvarVenda() {
             document.getElementById("quantidade").value = "";
             document.getElementById("valor").value = "";
         } else {
-            const erroCorpo = await response.json();
-            console.error("Erro Baserow Vendas:", erroCorpo);
-            alert("Erro ao salvar. Verifique se os nomes das colunas no Baserow são exatamente: data, produto, quantidade e valor_unitario.");
+            // Se o Baserow rejeitar por causa do formato de data nativa (ex: se for campo de texto), tenta o formato BR
+            const dataBR = `${dia}/${mes}/${ano}`;
+            const retryResponse = await fetch(urlLimpa, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Token ${BASEROW_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    "data": dataBR,
+                    "produto": produto,
+                    "quantidade": quantidade,
+                    "valor_unitario": valor
+                })
+            });
+
+            if (retryResponse.ok) {
+                alert("Venda cadastrada com sucesso!");
+                document.getElementById("produto").value = "";
+                document.getElementById("quantidade").value = "";
+                document.getElementById("valor").value = "";
+            } else {
+                const erroCorpo = await retryResponse.json();
+                console.error("Erro Baserow Vendas:", erroCorpo);
+                alert("Erro ao salvar. Verifique se as colunas no Baserow se chamam: data, produto, quantidade e valor_unitario.");
+            }
         }
     } catch (error) {
         console.error("Erro na conexão:", error);
