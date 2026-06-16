@@ -7,17 +7,12 @@ async function salvarDespesa() {
         return;
     }
 
-    // Captura a data e hora locais para preencher o campo combinado do Baserow corretamente
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const dia = String(hoje.getDate()).padStart(2, '0');
-    const horas = String(hoje.getHours()).padStart(2, '0');
-    const minutos = String(hoje.getMinutes()).padStart(2, '0');
-    const segundos = String(hoje.getSeconds()).padStart(2, '0');
     
-    // Formato final aceito por campos Date + Time: "YYYY-MM-DD HH:MM:SS"
-    const dataHoraLocal = `${ano}-${mes}-${dia} ${horas}:${minutos}:${segundos}`;
+    const dataFormatada = `${ano}-${mes}-${dia}`;
 
     try {
         const urlLimpa = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.despesas}/?user_field_names=true`;
@@ -29,7 +24,7 @@ async function salvarDespesa() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "data": dataHoraLocal,
+                "data": dataFormatada,
                 "descricao": descricao,
                 "valor": valor
             })
@@ -40,9 +35,30 @@ async function salvarDespesa() {
             document.getElementById("descricao").value = "";
             document.getElementById("valor").value = "";
         } else {
-            const erroCorpo = await response.json();
-            console.error("Erro Baserow Despesas:", erroCorpo);
-            alert("Erro ao salvar a despesa. Verifique se os nomes das colunas no Baserow são exatamente: data, descricao e valor.");
+            // Segunda tentativa usando formato brasileiro caso a coluna seja do tipo texto simples
+            const dataBR = `${dia}/${mes}/${ano}`;
+            const retryResponse = await fetch(urlLimpa, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Token ${BASEROW_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    "data": dataBR,
+                    "descricao": descricao,
+                    "valor": valor
+                })
+            });
+
+            if (retryResponse.ok) {
+                alert("Despesa cadastrada com sucesso!");
+                document.getElementById("descricao").value = "";
+                document.getElementById("valor").value = "";
+            } else {
+                const erroCorpo = await retryResponse.json();
+                console.error("Erro Baserow Despesas:", erroCorpo);
+                alert("Erro ao salvar a despesa. Verifique se as colunas no Baserow se chamam: data, descricao e valor.");
+            }
         }
     } catch (error) {
         console.error("Erro de conexão:", error);
