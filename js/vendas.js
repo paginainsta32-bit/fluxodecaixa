@@ -8,9 +8,12 @@ async function salvarVenda() {
         return;
     }
 
-    // Solução da Data: Cria o formato ISO corrigindo o fuso horário local para o Baserow aceitar o campo Date + Time
-    const tzoffset = (new Date()).getTimezoneOffset() * 60000; 
-    const dataLocalISO = (new Date(Date.now() - tzoffset)).toISOString().slice(0, 19).replace('T', ' ');
+    // Captura a data local no formato YYYY-MM-DD Puro para evitar distorções de fuso horário internacional
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const dataLocalPura = `${ano}-${mes}-${dia}`;
 
     try {
         const urlLimpa = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.vendas}/?user_field_names=true`;
@@ -22,7 +25,7 @@ async function salvarVenda() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "data": dataLocalISO,
+                "data": dataLocalPura,
                 "produto": produto,
                 "quantidade": quantidade,
                 "valor_unitario": valor
@@ -37,7 +40,7 @@ async function salvarVenda() {
         } else {
             const erroCorpo = await response.json();
             console.error("Erro Baserow:", erroCorpo);
-            alert("Erro ao salvar. Certifique-se de que os nomes das colunas são data, produto, quantidade e valor_unitario.");
+            alert("Erro ao salvar. Verifique se os nomes das colunas no Baserow são exatamente: data, produto, quantidade e valor_unitario.");
         }
     } catch (error) {
         console.error("Erro na conexão:", error);
