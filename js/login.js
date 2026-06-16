@@ -11,10 +11,12 @@ async function login() {
     try {
         if (msgElement) msgElement.innerHTML = "Verificando...";
 
-        // Garante a construção exata da URL do Baserow sem barras duplicadas ou caminhos quebrados
-        const urlLimpa = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.usuarios}/?user_field_names=true`;
+        // Como a sua API_URL do config.js já termina em "/table", adicionamos apenas o ID da tabela
+        const urlLimpa = `${API_URL.replace(/\/$/, "")}/${TABLES.usuarios}/?user_field_names=true`;
 
+        // Método obrigatório GET para consultar dados
         const response = await fetch(urlLimpa, {
+            method: "GET",
             headers: {
                 "Authorization": `Token ${BASEROW_TOKEN}`
             }
@@ -28,7 +30,7 @@ async function login() {
 
         const data = await response.json();
 
-        // Procura o usuário ignorando maiúsculas/minúsculas e espaços extras
+        // Procura o usuário cadastrado correspondente
         const usuario = data.results.find(u =>
             String(u["email"]).trim().toLowerCase() === email.toLowerCase() &&
             String(u["senha"]).trim() === senha
