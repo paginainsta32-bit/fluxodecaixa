@@ -17,7 +17,6 @@ async function iniciarDashboard() {
 
 async function buscarDadosDoServidor() {
     try {
-        // Garante URLs limpas sem barras duplicadas
         const urlVendas = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.vendas}/?user_field_names=true&size=1000`;
         const urlDespesas = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.despesas}/?user_field_names=true&size=1000`;
 
@@ -29,11 +28,9 @@ async function buscarDadosDoServidor() {
             const despesasDados = await despesasResponse.json();
             dadosGlobais.vendas = vendasDados.results || [];
             dadosGlobais.despesas = despesasDados.results || [];
-        } else {
-            console.error("Erro na resposta do Baserow. Status Vendas:", vendasResponse.status, "Status Despesas:", despesasResponse.status);
         }
     } catch (error) {
-        console.error("Erro ao buscar dados do servidor:", error);
+        console.error("Erro ao buscar dados:", error);
     }
 }
 
@@ -42,24 +39,23 @@ function alternarFiltro(tipo) {
     calcularEExibirDados();
 }
 
-// Normaliza qualquer variação de data vinda do Baserow para o padrão AAAA-MM-DD local
+// Reconhece e normaliza de forma inteligente qualquer string de data (seja BR ou ISO) para AAAA-MM-DD
 function normalizarData(dataString) {
     if (!dataString) return "";
     
-    // Se vier no formato ISO ("2026-06-14T22:00:00Z" ou com espaço do seu salvamento antigo)
+    // Remove horas e minutos se existirem na string
     let apenasData = dataString.trim().split(" ")[0].split("T")[0];
     
-    // Se a data vier no formato DD/MM/AAAA
     if (apenasData.includes("/")) {
         const partes = apenasData.split("/");
+        // Se já estiver como AAAA/MM/DD
         if (partes[0].length === 4) {
-            // Caso venha AAAA/MM/DD
             return `${partes[0]}-${partes[1]}-${partes[2]}`;
         }
+        // Converte DD/MM/AAAA para AAAA-MM-DD
         return `${partes[2]}-${partes[1]}-${partes[0]}`; 
     }
-    
-    return apenasData; // Retorna AAAA-MM-DD
+    return apenasData;
 }
 
 function calcularEExibirDados() {
@@ -75,25 +71,25 @@ function calcularEExibirDados() {
         if (document.getElementById("tituloPeriodo")) document.getElementById("tituloPeriodo").innerText = `Resumo do Dia`;
         if (document.getElementById("subtituloPeriodo")) document.getElementById("subtituloPeriodo").innerText = `Analisando a data: ${dataFormatada}`;
 
-        // Calcula Vendas
+        // Calcula Vendas Validadas
         dadosGlobais.vendas.forEach(v => {
             if (!v.produto && !v.Produto) return; 
             
             const dataRegistro = normalizarData(v.data || v.Data || v.DATA);
             if (dataRegistro === dataSelecionada) {
                 const total = Number(v.valor_total || v.Valor_Total || 0);
-                const unitario = Number(v.valor_unitario || v.Valor_Unitario || v.valor || v.Valor || 0);
+                const unitario = Number(v.valor_unitario || v.Valor_Unitario || 0);
                 const qtd = Number(v.quantidade || v.Quantidade || 1);
                 
                 totalVendas += (total > 0) ? total : (unitario * qtd);
             }
         });
 
-        // Calcula Despesas
+        // Calcula Despesas Validadas
         dadosGlobais.despesas.forEach(d => {
             const dataRegistro = normalizarData(d.data || d.Data || d.DATA);
             if (dataRegistro === dataSelecionada) {
-                totalDespesas += Number(d.valor || d.Valor || d.valor_total || 0);
+                totalDespesas += Number(d.valor || d.Valor || 0);
             }
         });
 
@@ -108,10 +104,10 @@ function calcularEExibirDados() {
             
             const dataRegistro = normalizarData(v.data || v.Data || v.DATA);
             if (dataRegistro) {
-                const partes = dataRegistro.split('-');
-                if (partes[0] === anoSelecionado && partes[1] === mesSelecionado) {
+                const [ano, mes, dia] = dataRegistro.split('-');
+                if (ano === anoSelecionado && mes === mesSelecionado) {
                     const total = Number(v.valor_total || v.Valor_Total || 0);
-                    const unitario = Number(v.valor_unitario || v.Valor_Unitario || v.valor || v.Valor || 0);
+                    const unitario = Number(v.valor_unitario || v.Valor_Unitario || 0);
                     const qtd = Number(v.quantidade || v.Quantidade || 1);
                     
                     totalVendas += (total > 0) ? total : (unitario * qtd);
@@ -122,9 +118,9 @@ function calcularEExibirDados() {
         dadosGlobais.despesas.forEach(d => {
             const dataRegistro = normalizarData(d.data || d.Data || d.DATA);
             if (dataRegistro) {
-                const partes = dataRegistro.split('-');
-                if (partes[0] === anoSelecionado && partes[1] === mesSelecionado) {
-                    totalDespesas += Number(d.valor || d.Valor || d.valor_total || 0);
+                const [ano, mes, dia] = dataRegistro.split('-');
+                if (ano === anoSelecionado && mes === mesSelecionado) {
+                    totalDespesas += Number(d.valor || d.Valor || 0);
                 }
             }
         });
