@@ -7,9 +7,12 @@ async function salvarDespesa() {
         return;
     }
 
-    // Solução da Data: Mesma correção de fuso horário local para o campo Date + Time do Baserow
-    const tzoffset = (new Date()).getTimezoneOffset() * 60000; 
-    const dataLocalISO = (new Date(Date.now() - tzoffset)).toISOString().slice(0, 19).replace('T', ' ');
+    // Captura a data local no formato YYYY-MM-DD Puro para evitar distorções de fuso horário internacional
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const dataLocalPura = `${ano}-${mes}-${dia}`;
 
     try {
         const urlLimpa = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.despesas}/?user_field_names=true`;
@@ -21,7 +24,7 @@ async function salvarDespesa() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "data": dataLocalISO,
+                "data": dataLocalPura,
                 "descricao": descricao,
                 "valor": valor
             })
@@ -34,7 +37,7 @@ async function salvarDespesa() {
         } else {
             const erroCorpo = await response.json();
             console.error("Erro Baserow:", erroCorpo);
-            alert("Erro ao salvar a despesa. Verifique as colunas da tabela.");
+            alert("Erro ao salvar a despesa. Verifique se os nomes das colunas no Baserow são exatamente: data, descricao e valor.");
         }
     } catch (error) {
         console.error("Erro de conexão:", error);
