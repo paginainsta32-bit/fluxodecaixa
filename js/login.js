@@ -11,10 +11,9 @@ async function login() {
     try {
         if (msgElement) msgElement.innerHTML = "Verificando...";
 
-        // Como a sua API_URL do config.js já termina em "/table", adicionamos apenas o ID da tabela
+        // Monta a URL exata usando as variáveis globais do config.js
         const urlLimpa = `${API_URL.replace(/\/$/, "")}/${TABLES.usuarios}/?user_field_names=true`;
 
-        // Método obrigatório GET para consultar dados
         const response = await fetch(urlLimpa, {
             method: "GET",
             headers: {
@@ -30,10 +29,19 @@ async function login() {
 
         const data = await response.json();
 
+        // Garante que o 'results' existe para não estourar erro no console do navegador
+        const listaUsuarios = data.results || [];
+
+        if (listaUsuarios.length === 0) {
+            if (msgElement) msgElement.innerHTML = "Nenhum usuário localizado ou token sem permissão.";
+            console.warn("A API não retornou a lista de resultados em 'results':", data);
+            return;
+        }
+
         // Procura o usuário cadastrado correspondente
-        const usuario = data.results.find(u =>
-            String(u["email"]).trim().toLowerCase() === email.toLowerCase() &&
-            String(u["senha"]).trim() === senha
+        const usuario = listaUsuarios.find(u =>
+            u && u["email"] && String(u["email"]).trim().toLowerCase() === email.toLowerCase() &&
+            u["senha"] && String(u["senha"]).trim() === senha
         );
 
         if (usuario) {
