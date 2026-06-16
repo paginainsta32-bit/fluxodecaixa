@@ -8,12 +8,17 @@ async function salvarVenda() {
         return;
     }
 
-    // Captura a data local no formato YYYY-MM-DD Puro para evitar distorções de fuso horário internacional
+    // Captura a data e hora locais para preencher o campo combinado do Baserow corretamente
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const dia = String(hoje.getDate()).padStart(2, '0');
-    const dataLocalPura = `${ano}-${mes}-${dia}`;
+    const horas = String(hoje.getHours()).padStart(2, '0');
+    const minutos = String(hoje.getMinutes()).padStart(2, '0');
+    const segundos = String(hoje.getSeconds()).padStart(2, '0');
+    
+    // Formato final aceito por campos Date + Time: "YYYY-MM-DD HH:MM:SS"
+    const dataHoraLocal = `${ano}-${mes}-${dia} ${horas}:${minutos}:${segundos}`;
 
     try {
         const urlLimpa = `${API_URL.replace(/\/$/, "")}/database/rows/table/${TABLES.vendas}/?user_field_names=true`;
@@ -25,7 +30,7 @@ async function salvarVenda() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "data": dataLocalPura,
+                "data": dataHoraLocal,
                 "produto": produto,
                 "quantidade": quantidade,
                 "valor_unitario": valor
@@ -39,7 +44,7 @@ async function salvarVenda() {
             document.getElementById("valor").value = "";
         } else {
             const erroCorpo = await response.json();
-            console.error("Erro Baserow:", erroCorpo);
+            console.error("Erro Baserow Vendas:", erroCorpo);
             alert("Erro ao salvar. Verifique se os nomes das colunas no Baserow são exatamente: data, produto, quantidade e valor_unitario.");
         }
     } catch (error) {
